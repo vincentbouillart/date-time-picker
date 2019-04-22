@@ -44,7 +44,7 @@ export const OWL_DTPICKER_SCROLL_STRATEGY =
     new InjectionToken<() => ScrollStrategy>('owl-dtpicker-scroll-strategy');
 
 /** @docs-private */
-export function OWL_DTPICKER_SCROLL_STRATEGY_PROVIDER_FACTORY( overlay: Overlay ): () => BlockScrollStrategy {
+export function OWL_DTPICKER_SCROLL_STRATEGY_PROVIDER_FACTORY(overlay: Overlay): () => BlockScrollStrategy {
     return () => overlay.scrollStrategies.block();
 }
 
@@ -100,7 +100,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         }
     }
 
-    set startAt( date: T | null ) {
+    set startAt(date: T | null) {
         this._startAt = this.getValidDate(this.dateTimeAdapter.deserialize(date));
     }
 
@@ -118,7 +118,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._pickerType;
     }
 
-    set pickerType( val: PickerType ) {
+    set pickerType(val: PickerType) {
         if (val !== this._pickerType) {
             this._pickerType = val;
             if (this._dtInput) {
@@ -138,7 +138,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._pickerMode;
     }
 
-    set pickerMode( mode: PickerMode ) {
+    set pickerMode(mode: PickerMode) {
         if (mode === 'popup') {
             this._pickerMode = mode;
         } else {
@@ -154,7 +154,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
             this._dtInput.disabled : !!this._disabled;
     }
 
-    set disabled( value: boolean ) {
+    set disabled(value: boolean) {
         value = coerceBooleanProperty(value);
         if (value !== this._disabled) {
             this._disabled = value;
@@ -169,7 +169,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._opened;
     }
 
-    set opened( val: boolean ) {
+    set opened(val: boolean) {
         val ? this.open() : this.close();
     }
 
@@ -203,6 +203,11 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
     @Output() monthSelected = new EventEmitter<T>();
 
     /**
+     * day clicked
+     * */
+    @Output() dayClicked = new EventEmitter<any>();
+
+    /**
      * Emit when the selected value has been confirmed
      * */
     public confirmSelectedChange = new EventEmitter<T[] | T>();
@@ -234,7 +239,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._selected;
     }
 
-    set selected( value: T | null ) {
+    set selected(value: T | null) {
         this._selected = value;
         this.changeDetector.markForCheck();
     }
@@ -244,7 +249,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._selecteds;
     }
 
-    set selecteds( values: T[] ) {
+    set selecteds(values: T[]) {
         this._selecteds = values;
         this.changeDetector.markForCheck();
     }
@@ -259,7 +264,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._dtInput && this._dtInput.max;
     }
 
-    get dateTimeFilter(): ( date: T | null ) => boolean {
+    get dateTimeFilter(): (date: T | null) => boolean {
         return this._dtInput && this._dtInput.dateTimeFilter;
     }
 
@@ -275,15 +280,15 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         return this._dtInput.isInRangeMode;
     }
 
-    constructor( private overlay: Overlay,
-                 private viewContainerRef: ViewContainerRef,
-                 private dialogService: OwlDialogService,
-                 private ngZone: NgZone,
-                 protected changeDetector: ChangeDetectorRef,
-                 @Optional() protected dateTimeAdapter: DateTimeAdapter<T>,
-                 @Inject(OWL_DTPICKER_SCROLL_STRATEGY) private defaultScrollStrategy: () => ScrollStrategy,
-                 @Optional() @Inject(OWL_DATE_TIME_FORMATS) protected dateTimeFormats: OwlDateTimeFormats,
-                 @Optional() @Inject(DOCUMENT) private document: any ) {
+    constructor(private overlay: Overlay,
+        private viewContainerRef: ViewContainerRef,
+        private dialogService: OwlDialogService,
+        private ngZone: NgZone,
+        protected changeDetector: ChangeDetectorRef,
+        @Optional() protected dateTimeAdapter: DateTimeAdapter<T>,
+        @Inject(OWL_DTPICKER_SCROLL_STRATEGY) private defaultScrollStrategy: () => ScrollStrategy,
+        @Optional() @Inject(OWL_DATE_TIME_FORMATS) protected dateTimeFormats: OwlDateTimeFormats,
+        @Optional() @Inject(DOCUMENT) private document: any) {
         super(dateTimeAdapter, dateTimeFormats);
     }
 
@@ -300,13 +305,13 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
         }
     }
 
-    public registerInput( input: OwlDateTimeInputDirective<T> ): void {
+    public registerInput(input: OwlDateTimeInputDirective<T>): void {
         if (this._dtInput) {
             throw Error('A Owl DateTimePicker can only be associated with a single input.');
         }
 
         this._dtInput = input;
-        this.dtInputSub = this._dtInput.valueChange.subscribe(( value: T[] | T | null ) => {
+        this.dtInputSub = this._dtInput.valueChange.subscribe((value: T[] | T | null) => {
             if (Array.isArray(value)) {
                 this.selecteds = value;
             } else {
@@ -364,7 +369,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
 
         // Listen to picker container's confirmSelectedStream
         this.confirmSelectedStreamSub = this.pickerContainer.confirmSelectedStream
-            .subscribe(( event: any ) => {
+            .subscribe((event: any) => {
                 this.confirmSelect(event);
             });
     }
@@ -374,7 +379,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
      * @param date -- a date to be selected
      * @return {void}
      * */
-    public select( date: T[] | T ): void {
+    public select(date: T[] | T): void {
 
         if (Array.isArray(date)) {
             this.selecteds = [...date];
@@ -404,15 +409,19 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
     /**
      * Emits the selected year in multi-year view
      * */
-    public selectYear( normalizedYear: T ): void {
+    public selectYear(normalizedYear: T): void {
         this.yearSelected.emit(normalizedYear);
     }
 
     /**
      * Emits selected month in year view
      * */
-    public selectMonth( normalizedMonth: T ): void {
+    public selectMonth(normalizedMonth: T): void {
         this.monthSelected.emit(normalizedMonth);
+    }
+
+    public clickedDay(data: any): void {
+        this.dayClicked.emit(data);
     }
 
     /**
@@ -479,7 +488,7 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
      * @param {any} event
      * @return {void}
      * */
-    public confirmSelect( event?: any ): void {
+    public confirmSelect(event?: any): void {
 
         if (this.isInSingleMode) {
             const selected = this.selected || this.startAt || this.dateTimeAdapter.now();
@@ -575,12 +584,12 @@ export class OwlDateTimeComponent<T> extends OwlDateTime<T> implements OnInit, O
             .withFlexibleDimensions(false)
             .withPush(false)
             .withPositions([
-                {originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top'},
-                {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom'},
-                {originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top'},
-                {originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom'},
-                {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetY: -176},
-                {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetY: -352},
+                { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
+                { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
+                { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top' },
+                { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom' },
+                { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetY: -176 },
+                { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetY: -352 },
             ]);
     }
 }

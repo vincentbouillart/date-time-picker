@@ -59,12 +59,13 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * Sunday: 0 ~ Saturday: 6
      * */
     private _firstDayOfWeek: number = 0;
+    private _selectedDays: T[] = [];
     @Input()
     get firstDayOfWeek(): number {
         return this._firstDayOfWeek;
     }
 
-    set firstDayOfWeek( val: number ) {
+    set firstDayOfWeek(val: number) {
         val = coerceNumberProperty(val);
         if (val >= 0 && val <= 6 && val !== this._firstDayOfWeek) {
             this._firstDayOfWeek = val;
@@ -86,8 +87,26 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return this._selectMode;
     }
 
-    set selectMode( val: SelectMode ) {
+    set selectMode(val: SelectMode) {
         this._selectMode = val;
+        if (this.initiated) {
+            this.generateCalendar();
+            this.cdRef.markForCheck();
+        }
+    }
+
+    @Input()
+    get selectedDays(): T[] {
+        return this._selectedDays;
+    }
+
+    set selectedDays(days: T[]) {
+        this._selectedDays = Object.assign({}, ...days.map((v) => {
+            v = this.dateTimeAdapter.deserialize(v);
+            const validDate = this.getValidDate(v);
+            const dateStr = this.dateTimeAdapter.format(validDate, "DD/MM/YYYY");
+            return { [dateStr]: true }
+        }));
         if (this.initiated) {
             this.generateCalendar();
             this.cdRef.markForCheck();
@@ -101,7 +120,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return this._selected;
     }
 
-    set selected( value: T | null ) {
+    set selected(value: T | null) {
         const oldSelected = this._selected;
         value = this.dateTimeAdapter.deserialize(value);
         this._selected = this.getValidDate(value);
@@ -117,8 +136,8 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return this._selecteds;
     }
 
-    set selecteds( values: T[] ) {
-        this._selecteds = values.map(( v ) => {
+    set selecteds(values: T[]) {
+        this._selecteds = values.map((v) => {
             v = this.dateTimeAdapter.deserialize(v);
             return this.getValidDate(v);
         });
@@ -131,7 +150,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return this._pickerMoment;
     }
 
-    set pickerMoment( value: T ) {
+    set pickerMoment(value: T) {
         const oldMoment = this._pickerMoment;
         value = this.dateTimeAdapter.deserialize(value);
         this._pickerMoment = this.getValidDate(value) || this.dateTimeAdapter.now();
@@ -150,13 +169,13 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
     /**
      * A function used to filter which dates are selectable
      * */
-    private _dateFilter: ( date: T ) => boolean;
+    private _dateFilter: (date: T) => boolean;
     @Input()
     get dateFilter() {
         return this._dateFilter;
     }
 
-    set dateFilter( filter: ( date: T ) => boolean ) {
+    set dateFilter(filter: (date: T) => boolean) {
         this._dateFilter = filter;
         if (this.initiated) {
             this.generateCalendar();
@@ -171,7 +190,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return this._minDate;
     }
 
-    set minDate( value: T | null ) {
+    set minDate(value: T | null) {
         value = this.dateTimeAdapter.deserialize(value);
         this._minDate = this.getValidDate(value);
         if (this.initiated) {
@@ -187,7 +206,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return this._maxDate;
     }
 
-    set maxDate( value: T | null ) {
+    set maxDate(value: T | null) {
         value = this.dateTimeAdapter.deserialize(value);
         this._maxDate = this.getValidDate(value);
 
@@ -245,6 +264,11 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
     public firstRowOffset: number;
 
     /**
+    * Callback to invoke when a new date is selected
+    * */
+    @Output() readonly dateClicked = new EventEmitter<T | null>();
+
+    /**
      * Callback to invoke when a new date is selected
      * */
     @Output() readonly selectedChange = new EventEmitter<T | null>();
@@ -265,9 +289,9 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         return true;
     }
 
-    constructor( private cdRef: ChangeDetectorRef,
-                 @Optional() private dateTimeAdapter: DateTimeAdapter<T>,
-                 @Optional() @Inject(OWL_DATE_TIME_FORMATS) private dateTimeFormats: OwlDateTimeFormats ) {
+    constructor(private cdRef: ChangeDetectorRef,
+        @Optional() private dateTimeAdapter: DateTimeAdapter<T>,
+        @Optional() @Inject(OWL_DATE_TIME_FORMATS) private dateTimeFormats: OwlDateTimeFormats) {
     }
 
     public ngOnInit() {
@@ -294,7 +318,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param {CalendarCell} cell
      * @return {void}
      * */
-    public selectCalendarCell( cell: CalendarCell ): void {
+    public selectCalendarCell(cell: CalendarCell): void {
 
         // Cases in which the date would not be selected
         // 1, the calendar cell is NOT enabled (is NOT valid)
@@ -302,7 +326,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         if (!cell.enabled || (this.hideOtherMonths && cell.out)) {
             return;
         }
-
+        this.dateClicked.emit(cell.date);
         this.selectDate(cell.value);
     }
 
@@ -311,7 +335,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param {number} date -- a new date's numeric value
      * @return {void}
      * */
-    private selectDate( date: number ): void {
+    private selectDate(date: number): void {
         const daysDiff = date - 1;
         const selected = this.dateTimeAdapter.addCalendarDays(this.firstDateOfMonth, daysDiff);
 
@@ -324,7 +348,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param {KeyboardEvent} event
      * @return {void}
      * */
-    public handleCalendarKeydown( event: KeyboardEvent ): void {
+    public handleCalendarKeydown(event: KeyboardEvent): void {
         let moment;
         switch (event.keyCode) {
             // minus 1 day
@@ -406,8 +430,8 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         const narrowWeekdays = this.dateTimeAdapter.getDayOfWeekNames('narrow');
         const firstDayOfWeek = this.firstDayOfWeek;
 
-        const weekdays = longWeekdays.map(( long, i ) => {
-            return {long, short: shortWeekdays[i], narrow: narrowWeekdays[i]};
+        const weekdays = longWeekdays.map((long, i) => {
+            return { long, short: shortWeekdays[i], narrow: narrowWeekdays[i] };
         });
 
         this._weekdays = weekdays.slice(firstDayOfWeek).concat(weekdays.slice(0, firstDayOfWeek));
@@ -465,7 +489,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param {number} daysDiff -- the amount of days from the first date of the month
      * @return {CalendarCell}
      * */
-    private createDateCell( date: T, daysDiff: number ): CalendarCell {
+    private createDateCell(date: T, daysDiff: number): CalendarCell {
         // total days of the month
         const daysInMonth = this.dateTimeAdapter.getNumDaysInMonth(this.pickerMoment);
         const dateNum = this.dateTimeAdapter.getDate(date);
@@ -480,8 +504,11 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         const dayValue = daysDiff + 1;
         const out = dayValue < 1 || dayValue > daysInMonth;
         const cellClass = 'owl-dt-day-' + this.dateTimeAdapter.getDay(date);
+        const dateFormat = this.dateTimeAdapter.format(date, "DD/MM/YYYY");
+        const selected = this._selectedDays[dateFormat];
 
-        return new CalendarCell(dayValue, dateName, ariaLabel, enabled, out, cellClass);
+
+        return new CalendarCell(dayValue, dateName, ariaLabel, enabled, out, cellClass, selected, date);
     }
 
     /**
@@ -489,7 +516,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param date
      * @return {boolean}
      * */
-    private isDateEnabled( date: T ): boolean {
+    private isDateEnabled(date: T): boolean {
         return !!date &&
             (!this.dateFilter || this.dateFilter(date)) &&
             (!this.minDate || this.dateTimeAdapter.compare(date, this.minDate) >= 0) &&
@@ -501,7 +528,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param {any} obj -- The object to check.
      * @return {Date | null} -- The given object if it is both a date instance and valid, otherwise null.
      */
-    private getValidDate( obj: any ): T | null {
+    private getValidDate(obj: any): T | null {
         return (this.dateTimeAdapter.isDateInstance(obj) && this.dateTimeAdapter.isValid(obj)) ? obj : null;
     }
 
@@ -511,7 +538,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
      * @param {Date} dateRight
      * @return {boolean}
      * */
-    public isSameMonth( dateLeft: T, dateRight: T ): boolean {
+    public isSameMonth(dateLeft: T, dateRight: T): boolean {
         return !!(dateLeft && dateRight &&
             this.dateTimeAdapter.isValid(dateLeft) && this.dateTimeAdapter.isValid(dateRight) &&
             this.dateTimeAdapter.getYear(dateLeft) === this.dateTimeAdapter.getYear(dateRight) &&
@@ -537,7 +564,7 @@ export class OwlMonthViewComponent<T> implements OnInit, AfterContentInit, OnDes
         }
 
         if (this.isInRangeMode && this.selecteds) {
-            this.selectedDates = this.selecteds.map(( selected ) => {
+            this.selectedDates = this.selecteds.map((selected) => {
                 if (this.dateTimeAdapter.isValid(selected)) {
                     const dayDiff = this.dateTimeAdapter.differenceInCalendarDays(selected, this.firstDateOfMonth);
                     return dayDiff + 1;

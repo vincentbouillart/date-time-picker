@@ -17,12 +17,15 @@ import { SelectMode } from './date-time.class';
 import { take } from 'rxjs/operators';
 
 export class CalendarCell {
-    constructor( public value: number,
-                 public displayValue: string,
-                 public ariaLabel: string,
-                 public enabled: boolean,
-                 public out: boolean = false,
-                 public cellClass: string = '' ) {
+    constructor(
+        public value: number,
+        public displayValue: string,
+        public ariaLabel: string,
+        public enabled: boolean,
+        public out: boolean = false,
+        public cellClass: string = '',
+        public selection: boolean = false,
+        public date: any = null) {
     }
 }
 
@@ -94,18 +97,18 @@ export class OwlCalendarBodyComponent implements OnInit {
             || this.selectMode === 'rangeTo';
     }
 
-    constructor( private elmRef: ElementRef,
-                 private ngZone: NgZone, ) {
+    constructor(private elmRef: ElementRef,
+        private ngZone: NgZone, ) {
     }
 
     public ngOnInit() {
     }
 
-    public selectCell( cell: CalendarCell ): void {
+    public selectCell(cell: CalendarCell): void {
         this.select.emit(cell);
     }
 
-    public isActiveCell( rowIndex: number, colIndex: number ): boolean {
+    public isActiveCell(rowIndex: number, colIndex: number): boolean {
         const cellNumber = rowIndex * this.numCols + colIndex;
         return cellNumber === this.activeCell;
     }
@@ -115,7 +118,30 @@ export class OwlCalendarBodyComponent implements OnInit {
      * @param {number} value
      * @return {boolean}
      * */
-    public isSelected( value: number ): boolean {
+    public isSelected(value: number): boolean {
+
+        if (!this.selectedValues || this.selectedValues.length === 0) {
+            return false;
+        }
+
+        if (this.isInSingleMode) {
+            return value === this.selectedValues[0];
+        }
+
+        if (this.isInRangeMode) {
+            const fromValue = this.selectedValues[0];
+            const toValue = this.selectedValues[1];
+
+            return value === fromValue || value === toValue;
+        }
+    }
+
+    /**
+     * Check if the cell is selected
+     * @param {number} value
+     * @return {boolean}
+     * */
+    public isSelectedDay(value: number): boolean {
 
         if (!this.selectedValues || this.selectedValues.length === 0) {
             return false;
@@ -136,7 +162,7 @@ export class OwlCalendarBodyComponent implements OnInit {
     /**
      * Check if the cell in the range
      * */
-    public isInRange( value: number ): boolean {
+    public isInRange(value: number): boolean {
         if (this.isInRangeMode) {
             const fromValue = this.selectedValues[0];
             const toValue = this.selectedValues[1];
@@ -152,7 +178,7 @@ export class OwlCalendarBodyComponent implements OnInit {
     /**
      * Check if the cell is the range from
      * */
-    public isRangeFrom( value: number ): boolean {
+    public isRangeFrom(value: number): boolean {
         if (this.isInRangeMode) {
             const fromValue = this.selectedValues[0];
             return fromValue !== null && value === fromValue;
@@ -162,7 +188,7 @@ export class OwlCalendarBodyComponent implements OnInit {
     /**
      * Check if the cell is the range to
      * */
-    public isRangeTo( value: number ): boolean {
+    public isRangeTo(value: number): boolean {
         if (this.isInRangeMode) {
             const toValue = this.selectedValues[1];
             return toValue !== null && value === toValue;
